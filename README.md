@@ -1,6 +1,6 @@
 ##CleverMatches
 
-CleverMatches is (or at least as a *stone soup*, aspires to be) an efficient fuzzy text search for applications with autocompletion widgets.
+CleverMatches is (or at least as a *stone soup*, aspires to be) an efficient fuzzy text search for applications with autocompletion widgets. It's largely inspired by Sublime Text.
 
 ###Example
 ```
