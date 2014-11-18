@@ -4,7 +4,7 @@ function expect_only_these_keys(match_set, term, keys){
   rs = match_set.seek(term, keys.length);
   for (_i = 0, _len = rs.length; _i < _len; _i++) {
     mr = rs[_i];
-    ok((keys.indexOf(mr.key) >= 0), mr.text + " should have been displaced from the match results by better matches");
+    ok((keys.indexOf(mr.key) >= 0), mr.text + " is in the top results");
   }
 }
 
