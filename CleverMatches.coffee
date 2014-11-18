@@ -1,4 +1,7 @@
-#returns null if not a match, or {score, matched:text with match tags inserted}
+#general rules:
+#methods prefixed with unoptimized_ will eventually be deprecated in favour of an optimized version
+
+#if not a match, returns null, else {score, matched:text with match tags inserted}
 subsequence = (text, term, hit_tag)->
   uctext = text.toUpperCase()
   ucterm = term.toUpperCase()
@@ -17,16 +20,16 @@ subsequence = (text, term, hit_tag)->
       original_char = text.charCodeAt(j)
       #special favor to upper case letters, and letters after a space or an underscore, as these are likely to be the beginning of a word and thus better define the word itself
       if original_char >= 65 and original_char <= 90
-        score += 4
+        score += 30
       else if j > 0
         previous_char = text.charCodeAt(j - 1)
         if previous_char == 32 or previous_char == 95
-          score += 4
+          score += 30
       else
-        score += 4
+        score += 30
       #prefer words longer than 4, very short words don't need autocompletion
       if text.length > 4
-        score += 3
+        score += 20
       hits.push j
   
   #produce search result with match tags
@@ -40,6 +43,8 @@ subsequence = (text, term, hit_tag)->
     loop
       ie += 1
       break if ie >= hits.length or hits[ie] != hits[ie - 1] + 1
+    #points are scored for contiguous hits
+    score += (ie - i - 1)*7
     tagstart = hits[i]
     tagend = hits[ie - 1] + 1
     splitted_text.push text.slice last_split, tagstart
@@ -61,16 +66,11 @@ subsequence = (text, term, hit_tag)->
   
 
 class @MatchSet
-  constructor: ->
-    if arguments.length == 1
-      @takeSet arguments[0]
+  constructor: (args...)->
+    if args.length == 1
+      @takeSet args[0]
   takeSet: (@set)->
     #@set is like [[text, key]*]
-  #returns result array, no longer than nresults, formatted like [{score, matched, text, key}*] and sorted by score
-  #score: the matchingness of the result
-  #text: the text that was matched
-  #matched: the text with span tags inserted around the positions in the result where the search_term matched
-  #key: the key of the result that was matched
   seek: (search_term, nresults = 10, hit_tag = 'subsequence_matching')->
     #we sort of assume nresults is going to be small enough that an array is the most performant data structure for collating search results.
     return [] if @set.length == 0 or nresults == 0
@@ -91,8 +91,15 @@ class @MatchSet
           retar.pop()
         minscore = retar[retar.length-1].score
     retar
-
-@matchset = -> new @MatchSet(arguments...)
+  
+  unoptimized_seek_best_key: (term)->
+    res = @seek(term, 1)
+    if res.length > 0
+      res[0].key
+    else
+      null
+    
+@matchset = (args)-> new @MatchSet(args)
 
 #takes an array of strings, indicies serve as the keys in the MatchSet
-@matchset_from_strings = (strar)-> new @MatchSet((strar.map (st, i)-> [st, i])...)
+@matchset_from_strings = (strar)-> new @MatchSet((strar.map (st, i)-> [st, i]))
