@@ -2,6 +2,8 @@
 
 CleverMatcher is (or at least as a *stone soup*, aspires to be) an extremely efficient fuzzy text search for applications with autocompletion widgets. It's largely inspired by Sublime Text's autocompletion behavior, having a developed preference for matching acronym shorthands to their expansions.
 
+CleverMatcher wants you to type in shorthand. CleverMatcher will always understand.
+
 ###Example
 ```
 var ms = matchset([
@@ -26,11 +28,11 @@ yields
 ```
 
 ###API
-There is a simplified matchest construction function
+If no keys are specified, a text's index will be injected as its key
 ```
-var ms = matchset_from_strings(['Binding Lantern Smith', 'Hopeful Woods', 'blustery_green', 'Holy Sword']);
+var ms = matchset(['Binding Lantern Smith', 'Hopeful Woods', 'blustery_green', 'Holy Sword']);
 ```
-this will produce a matchset equivalent to the above; each entry's key will be as its index in the input array.
+This matchset will be equivalent to the above
 
 
 You can control the number of results you'll get, as well as the css class to assign to the spans in matched texts. Where ms is as previously specified,

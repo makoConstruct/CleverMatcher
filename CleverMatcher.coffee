@@ -14,18 +14,15 @@ matching = (candidate, term, hit_tag)->
 	termi = 0
 	while termi < ucterm.length
 		char = ucterm.charCodeAt termi
-		if char == uctext.charCodeAt cacy[ai] #we can match a word beginning. leap there, give acropoints
+		if ai < cacy.length and char == uctext.charCodeAt cacy[ai] #we can match a word beginning. leap there, give acropoints
 			texti = cacy[ai]
-			ai += 1
 			score += if term.charCodeAt(termi) == text.charCodeAt(cacy[ai]) then 41 else 30 #scores more if the case is the same
+			ai += 1
 		else
 			texti = uctext.indexOf(ucterm[termi], texti + 1) #search for character & update position
 			#ensure that the ai stays ahead of the texti, or else invalidate it
-			while texti > cacy[ai]
+			while ai < cacy.length and texti > cacy[ai]
 				ai += 1
-				if ai >= cacy.length
-					ai = -1
-					break
 			if texti == -1  #if it's not found, this term doesn't match the text
 				return null
 		hits.push texti
@@ -53,7 +50,7 @@ matching = (candidate, term, hit_tag)->
 			ie += 1
 			break if ie >= hits.length or hits[ie] != hits[ie - 1] + 1
 		#points are scored for contiguous hits
-		score += (ie - i - 1)*7
+		score += (ie - i - 1)*17
 		tagstart = hits[i]
 		tagend = hits[ie - 1] + 1
 		splitted_text.push text.slice last_split, tagstart
@@ -82,7 +79,11 @@ class @MatchSet
 	constructor: (args...)->
 		if args.length == 1
 			@take_set args[0]
-	take_set: (term_array)->
+	take_set: (term_array)-> #allows [[text, key]*] or [text*], in the latter case a text's index in the input array will be its key
+		#shunt term_array into the correct form
+		if term_array.length > 0
+			if term_array[0].constructor == String
+				term_array = (term_array.map (st, i)-> [st, i])
 		@set = new Array(term_array.length)
 		for i in [0 ... term_array.length]
 			text = term_array[i][0]
@@ -104,7 +105,7 @@ class @MatchSet
 		#@set is like [{acronym, text, key}*] where acronym is an array of the indeces of the beginnings of the words in the text
 	seek: (search_term, nresults = 10, hit_tag = 'subsequence_matching')->
 		#we sort of assume nresults is going to be small enough that an array is the most performant data structure for collating search results.
-		return [] if @set.length == 0 or nresults == 0
+		return [] if @set.length == 0 or nresults == 0 or search_term.length == 0
 		retar = []
 		minscore = 0
 		for ci in [0 ... @set.length]
@@ -130,6 +131,3 @@ class @MatchSet
 			null
 		
 @matchset = (args)-> new @MatchSet(args)
-
-#takes an array of strings, indicies serve as the keys in the MatchSet
-@matchset_from_strings = (strar)-> new @MatchSet((strar.map (st, i)-> [st, i]))
