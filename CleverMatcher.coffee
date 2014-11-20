@@ -1,6 +1,6 @@
 
 #if not a match, returns null, else {score, matched:text with match tags inserted}
-matching = (candidate, term, hit_tag)->
+matching = (candidate, term, hitTag)->
 	text = candidate.text
 	cacy = candidate.acronym
 	uctext = text.toUpperCase()
@@ -33,15 +33,15 @@ matching = (candidate, term, hit_tag)->
 	#post hoc scoring
 	#bonus points for matches at word beginnings
 	for hit in hits
-		original_char = text.charCodeAt(hit)
+		originalChar = text.charCodeAt(hit)
 	#prefers longer words as short ones rarely need autocompletion
 	if text.length > 4
 		score += 20
 	
 	#produce search result with match tags
 	i = 0
-	splitted_text = []
-	last_split = 0
+	splittedText = []
+	lastSplit = 0
 	#divide the string at the insertion points
 	while i < hits.length
 		#find the end of this contiguous sequence of hits
@@ -53,64 +53,64 @@ matching = (candidate, term, hit_tag)->
 		score += (ie - i - 1)*17
 		tagstart = hits[i]
 		tagend = hits[ie - 1] + 1
-		splitted_text.push text.slice last_split, tagstart
-		last_split = tagstart
-		splitted_text.push text.slice last_split, tagend
-		last_split = tagend
+		splittedText.push text.slice lastSplit, tagstart
+		lastSplit = tagstart
+		splittedText.push text.slice lastSplit, tagend
+		lastSplit = tagend
 		i = ie
-	cap = text.slice last_split, text.length
+	cap = text.slice lastSplit, text.length
 	#join that stuff up
 	i = 0
 	cumulation = ''
-	start_tag = '<span class="'+hit_tag+'">'
-	end_tag = '</span>'
-	while i < splitted_text.length
-		cumulation += splitted_text[i] + start_tag + splitted_text[i + 1] + end_tag
+	startTag = '<span class="'+hitTag+'">'
+	endTag = '</span>'
+	while i < splittedText.length
+		cumulation += splittedText[i] + startTag + splittedText[i + 1] + endTag
 		i += 2
 	{score:score,  matched:cumulation + cap}
 
-is_lowercase = (charcode)-> (charcode >= 97 and charcode <= 122)
-is_uppercase = (charcode)-> (charcode >= 65 and charcode <= 90)
-is_numeric = (charcode)-> (charcode >= 48 and charcode <= 57)
+isLowercase = (charcode)-> (charcode >= 97 and charcode <= 122)
+isUppercase = (charcode)-> (charcode >= 65 and charcode <= 90)
+isNumeric = (charcode)-> (charcode >= 48 and charcode <= 57)
 
-is_alphanum = (charcode)-> (is_lowercase charcode) or (is_uppercase charcode) or (is_numeric charcode)
+isAlphanum = (charcode)-> (isLowercase charcode) or (isUppercase charcode) or (isNumeric charcode)
 
 class @MatchSet
 	constructor: (args...)->
 		if args.length == 1
-			@take_set args[0]
-	take_set: (term_array)-> #allows [[text, key]*] or [text*], in the latter case a text's index in the input array will be its key
-		#shunt term_array into the correct form
-		if term_array.length > 0
-			if term_array[0].constructor == String
-				term_array = (term_array.map (st, i)-> [st, i])
-		@set = new Array(term_array.length)
-		for i in [0 ... term_array.length]
-			text = term_array[i][0]
+			@takeSet args[0]
+	takeSet: (termArray)-> #allows [[text, key]*] or [text*], in the latter case a text's index in the input array will be its key
+		#shunt termArray into the correct form
+		if termArray.length > 0
+			if termArray[0].constructor == String
+				termArray = (termArray.map (st, i)-> [st, i])
+		@set = new Array(termArray.length)
+		for i in [0 ... termArray.length]
+			text = termArray[i][0]
 			@set[i] =
 				text:text
-				key:term_array[i][1]
+				key:termArray[i][1]
 				acronym:(
 					ar = []
 					if text.length > 0
 						for j in [0 ... text.length]
 							charcode = text.charCodeAt j
 							ar.push j if (
-								(is_uppercase charcode) or
-								is_alphanum(charcode) and
-								(j == 0 or !is_alphanum(text.charCodeAt(j - 1))) #not letter
+								(isUppercase charcode) or
+								isAlphanum(charcode) and
+								(j == 0 or !isAlphanum(text.charCodeAt(j - 1))) #not letter
 							)
 					ar
 				)
 		#@set is like [{acronym, text, key}*] where acronym is an array of the indeces of the beginnings of the words in the text
-	seek: (search_term, nresults = 10, hit_tag = 'subsequence_matching')->
+	seek: (searchTerm, nresults = 10, hitTag = 'subsequence_matching')->
 		#we sort of assume nresults is going to be small enough that an array is the most performant data structure for collating search results.
-		return [] if @set.length == 0 or nresults == 0 or search_term.length == 0
+		return [] if @set.length == 0 or nresults == 0 or searchTerm.length == 0
 		retar = []
 		minscore = 0
 		for ci in [0 ... @set.length]
 			c = @set[ci]
-			sr = matching c, search_term, hit_tag
+			sr = matching c, searchTerm, hitTag
 			if sr and (sr.score > minscore or retar.length < nresults)
 				insertat = 0
 				for insertat in [0 ... retar.length]
@@ -123,7 +123,7 @@ class @MatchSet
 				minscore = retar[retar.length-1].score
 		retar
 	
-	seek_best_key: (term)->
+	seekBestKey: (term)->
 		res = @seek(term, 1)
 		if res.length > 0
 			res[0].key
