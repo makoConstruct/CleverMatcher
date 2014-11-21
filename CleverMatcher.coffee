@@ -12,18 +12,26 @@ substringMatch = (uctext, ucterm)-> #returns hits array
 		termi += 1
 	hits
 
+#subsequence match that prefers to go by word beginnings
 skipMatch = (uctext, ucterm, acry)-> #returns hits array
-	#subsequence match that prefers to go by word beginnings
+	#possible methods to explore once performance testing: try having it branch every time it faces a choice between skipping ahead to match an initial and continuing with a greedy substring match, get better results.
 	hits = []
 	ai = 0
 	texti = -1
 	termi = 0
 	while termi < ucterm.length
 		char = ucterm.charCodeAt termi
-		if ai < acry.length and char == uctext.charCodeAt acry[ai] #we can match a word beginning. leap there
-			texti = acry[ai]
-			ai += 1
+		#see if we can match a word beginning
+		ait = ai
+		while ait < acry.length
+			if char == uctext.charCodeAt acry[ait]
+				break
+			ait += 1
+		if ait < acry.length #we can match a word beginning. leap there
+			texti = acry[ait]
+			ai = ait + 1
 		else
+			#normal subsequence matching
 			texti = uctext.indexOf(ucterm[termi], texti + 1) #search for character & update position
 			#ensure that the ai stays ahead of the texti, or else invalidate it
 			while ai < acry.length and texti > acry[ai]

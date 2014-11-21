@@ -20,16 +20,23 @@
   };
 
   skipMatch = function(uctext, ucterm, acry) {
-    var ai, char, hits, termi, texti;
+    var ai, ait, char, hits, termi, texti;
     hits = [];
     ai = 0;
     texti = -1;
     termi = 0;
     while (termi < ucterm.length) {
       char = ucterm.charCodeAt(termi);
-      if (ai < acry.length && char === uctext.charCodeAt(acry[ai])) {
-        texti = acry[ai];
-        ai += 1;
+      ait = ai;
+      while (ait < acry.length) {
+        if (char === uctext.charCodeAt(acry[ait])) {
+          break;
+        }
+        ait += 1;
+      }
+      if (ait < acry.length) {
+        texti = acry[ait];
+        ai = ait + 1;
       } else {
         texti = uctext.indexOf(ucterm[termi], texti + 1);
         while (ai < acry.length && texti > acry[ai]) {
