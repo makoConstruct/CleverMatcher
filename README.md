@@ -18,11 +18,9 @@ ms.seek('bl');
 yields 
 ```
 [ { score: 15,
-    matched: '<span class="subsequence_matching">B</span>inding <span class="subsequence_matching">L</span>antern Smith',
     key: 0,
     text: 'Binding Lantern Smith' },
   { score: 11,
-    matched: '<span class="subsequence_matching">bl</span>ustery_green',
     key: 2,
     text: 'blustery_green' } ]
 ```
@@ -35,15 +33,16 @@ var ms = matchset(['Binding Lantern Smith', 'Hopeful Woods', 'blustery_green', '
 This matchset will be equivalent to the above
 
 
-You can control the number of results you'll get, as well as the css class to assign to the spans in matched texts. Where ms is as previously specified,
+You can control the number of results you'll get, and have CleverMatcher give you match html text that highlights the leters matched.
 
 ```
-ms.seek('hs', 1, 'matched');
+var ms = matchset(sameListAsAbove, 'hot-pink');
+ms.seek('hs', 1);
 ```
 returns
 ```
 [ { score: 15,
-    matched: '<span class="matched">H</span>olly <span class="matched">S</span>word',
+    matched: '<span class="hot-pink">H</span>olly <span class="hot-pink">S</span>word',
     key: 3,
     text: 'Holy Sword' } ]
 ```
