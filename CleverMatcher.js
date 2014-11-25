@@ -53,7 +53,7 @@
   };
 
   matching = function(candidate, term, hitTag) {
-    var acro, acry, ai, cap, cumulation, endTag, hits, i, ie, ji, lastSplit, outp, splittedText, startTag, tagend, tagstart, text, ucterm, uctext, _i, _j, _k, _len, _ref, _ref1;
+    var acry, ai, cap, cumulation, endTag, hit, hits, i, ie, ji, lastSplit, outp, splittedText, startTag, tagend, tagstart, text, ucterm, uctext, _i, _j, _k, _len, _ref, _ref1;
     text = candidate.text;
     acry = candidate.acronym;
     uctext = text.toUpperCase();
@@ -66,11 +66,11 @@
       return null;
     }
     ji = -1;
-    for (_i = 0, _len = acry.length; _i < _len; _i++) {
-      acro = acry[_i];
-      ji = hits.indexOf(acro, ji + 1);
+    for (_i = 0, _len = hits.length; _i < _len; _i++) {
+      hit = hits[_i];
+      ji = acry.indexOf(hit, ji + 1);
       if (ji >= 0) {
-        outp.score += 30;
+        outp.score += ji === 0 ? 48 : 30;
       }
     }
     for (i = _j = 0, _ref = hits.length; 0 <= _ref ? _j < _ref : _j > _ref; i = 0 <= _ref ? ++_j : --_j) {
@@ -140,8 +140,9 @@
   };
 
   this.MatchSet = (function() {
-    function MatchSet(set, hitTag) {
+    function MatchSet(set, hitTag, matchAllForNothing) {
       this.hitTag = hitTag;
+      this.matchAllForNothing = matchAllForNothing;
       this.takeSet(set);
     }
 
@@ -180,21 +181,38 @@
     };
 
     MatchSet.prototype.seek = function(searchTerm, nresults) {
-      var c, ci, insertat, minscore, retar, sr, _i, _j, _ref, _ref1;
+      var c, ci, i, insertat, minscore, ret, retar, sel, sr, _i, _j, _k, _ref, _ref1, _ref2;
       if (nresults == null) {
         nresults = 10;
       }
-      if (this.set.length === 0 || nresults === 0 || searchTerm.length === 0) {
+      if (this.set.length === 0 || nresults === 0) {
         return [];
+      }
+      if (searchTerm.length === 0) {
+        if (this.matchAllForNothing) {
+          ret = [];
+          for (i = _i = 0, _ref = Math.min(nresults, this.set.length); 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+            sel = this.set[i];
+            ret.push({
+              score: 1,
+              matched: sel.text,
+              text: sel.text,
+              key: sel.key
+            });
+          }
+          return ret;
+        } else {
+          return [];
+        }
       }
       retar = [];
       minscore = 0;
-      for (ci = _i = 0, _ref = this.set.length; 0 <= _ref ? _i < _ref : _i > _ref; ci = 0 <= _ref ? ++_i : --_i) {
+      for (ci = _j = 0, _ref1 = this.set.length; 0 <= _ref1 ? _j < _ref1 : _j > _ref1; ci = 0 <= _ref1 ? ++_j : --_j) {
         c = this.set[ci];
         sr = matching(c, searchTerm, this.hitTag);
         if (sr && (sr.score > minscore || retar.length < nresults)) {
           insertat = 0;
-          for (insertat = _j = 0, _ref1 = retar.length; 0 <= _ref1 ? _j < _ref1 : _j > _ref1; insertat = 0 <= _ref1 ? ++_j : --_j) {
+          for (insertat = _k = 0, _ref2 = retar.length; 0 <= _ref2 ? _k < _ref2 : _k > _ref2; insertat = 0 <= _ref2 ? ++_k : --_k) {
             if (retar[insertat].score < sr.score) {
               break;
             }
@@ -225,11 +243,14 @@
 
   })();
 
-  this.matchset = function(ar, hitTag) {
+  this.matchset = function(ar, hitTag, matchAllForNothing) {
     if (hitTag == null) {
       hitTag = 'subsequence_match';
     }
-    return new this.MatchSet(ar, hitTag);
+    if (matchAllForNothing == null) {
+      matchAllForNothing = false;
+    }
+    return new this.MatchSet(ar, hitTag, matchAllForNothing);
   };
 
 }).call(this);

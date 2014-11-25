@@ -57,10 +57,13 @@ matching = (candidate, term, hitTag)->
 	#post hoc scoring
 	#points for matches at word beginnings
 	ji = -1
-	for acro in acry
-		ji = hits.indexOf acro, ji+1
-		if ji >= 0
-			outp.score += 30
+	for hit in hits
+		ji = acry.indexOf hit, ji+1
+		if ji >= 0 then outp.score +=
+			if ji == 0
+				48
+			else
+				30
 	#points for matching the case
 	for i in [0 ... hits.length]
 		if term.charCodeAt(i) == text.charCodeAt(hits[i])
@@ -116,7 +119,7 @@ isNumeric = (charcode)-> (charcode >= 48 and charcode <= 57)
 isAlphanum = (charcode)-> (isLowercase charcode) or (isUppercase charcode) or (isNumeric charcode)
 
 class @MatchSet
-	constructor: (set, @hitTag)->
+	constructor: (set, @hitTag, @matchAllForNothing)->
 		@takeSet set
 	takeSet: (termArray)-> #allows [[text, key]*] or [text*], in the latter case a text's index in the input array will be its key
 		#shunt termArray into the correct form
@@ -142,9 +145,23 @@ class @MatchSet
 					ar
 				)
 		#@set is like [{acronym, text, key}*] where acronym is an array of the indeces of the beginnings of the words in the text
-	seek: (searchTerm, nresults = 10)->
+	seek: (searchTerm, nresults = 10)-> #returns like [{score, matched:[the text with match spans inserted where a letter matched], text, key}*]
 		#we sort of assume nresults is going to be small enough that an array is the most performant data structure for collating search results.
-		return [] if @set.length == 0 or nresults == 0 or searchTerm.length == 0
+		return [] if @set.length == 0 or nresults == 0
+		if searchTerm.length == 0
+			if @matchAllForNothing
+				ret = []
+				for i in [0 ... Math.min(nresults, @set.length)]
+					sel = @set[i]
+					ret.push {
+						score: 1 #shrug
+						matched: sel.text
+						text: sel.text
+						key: sel.key
+					}
+				return ret
+			else
+				return []
 		retar = []
 		minscore = 0
 		for ci in [0 ... @set.length]
@@ -169,4 +186,4 @@ class @MatchSet
 		else
 			null
 		
-@matchset = (ar, hitTag = 'subsequence_match')-> new @MatchSet(ar, hitTag)
+@matchset = (ar, hitTag = 'subsequence_match', matchAllForNothing = false)-> new @MatchSet(ar, hitTag, matchAllForNothing)
