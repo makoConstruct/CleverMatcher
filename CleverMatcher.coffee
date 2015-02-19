@@ -1,4 +1,4 @@
-substringMatch = (uctext, ucterm)-> #returns hits array
+subsequenceMatch = (uctext, ucterm)-> #returns array of the indices in uctext where the letters of ucterm were found. EG: subsequenceMatch("nothing", "ni") returns [0, 4]. subsequenceMatch("nothing", "a") returns null.
 	#simple subsequence match
 	hits = []
 	texti = -1
@@ -12,9 +12,13 @@ substringMatch = (uctext, ucterm)-> #returns hits array
 		termi += 1
 	hits
 
-#subsequence match that prefers to go by word beginnings
-skipMatch = (uctext, ucterm, acry)-> #returns hits array
+
+skipMatch = (uctext, ucterm, acry)->
+	#subsequence match that tries to match the letters at the beginnings of the words (IE, after a space, an underscore, or camelcase hump) instead of the first letters it finds when it can. Those words are specified in acry (short for acronym), which is an array of the indexes of the word beginnings in uctext.
+	#returns the same kind of hits array as subsequenceMatch
+	
 	#possible methods to explore once performance testing: try having it branch every time it faces a choice between skipping ahead to match an initial and continuing with a greedy substring match, get better results.
+	
 	hits = []
 	ai = 0
 	texti = -1
@@ -43,15 +47,16 @@ skipMatch = (uctext, ucterm, acry)-> #returns hits array
 	hits
 
 
-#if not a match, returns null, else {score, matched:text with match tags inserted}
 matching = (candidate, term, hitTag)->
+	#this method tries skipMatch, then subsequenceMatch if there is no skipMatch. It then scores the result.
+	#if no match, returns null, else {score, matched:<text with match tags inserted>}
 	text = candidate.text
 	acry = candidate.acronym
 	uctext = text.toUpperCase()
 	ucterm = term.toUpperCase()
 	outp = {score:1}
 	
-	hits = skipMatch(uctext, ucterm, acry) || substringMatch(uctext, ucterm)
+	hits = skipMatch(uctext, ucterm, acry) || subsequenceMatch(uctext, ucterm)
 	return null if !hits
 		
 	#post hoc scoring
@@ -106,7 +111,7 @@ matching = (candidate, term, hitTag)->
 			i += 2
 		outp.matched = cumulation + cap
 	else
-		#just add the contiguosity points
+		#otherwise just add the contiguosity points
 		for i in [1 ... hits.length]
 			if hits[i - 1] + 1 == hits[i]
 				outp.score += 18
@@ -119,33 +124,35 @@ isNumeric = (charcode)-> (charcode >= 48 and charcode <= 57)
 isAlphanum = (charcode)-> (isLowercase charcode) or (isUppercase charcode) or (isNumeric charcode)
 
 class @MatchSet
-	constructor: (set, @hitTag, @matchAllForNothing)->
-		@takeSet set
+	constructor: (termArray, @hitTag, @matchAllForNothing)->
+		@takeSet termArray
 	takeSet: (termArray)-> #allows [[text, key]*] or [text*], in the latter case a text's index in the input array will be its key
+		#does not currently maintain an index..
 		#shunt termArray into the correct form
-		if termArray.length > 0
-			if termArray[0].constructor == String
-				termArray = (termArray.map (st, i)-> [st, i])
-		@set = new Array(termArray.length)
-		for i in [0 ... termArray.length]
-			text = termArray[i][0]
-			@set[i] =
-				text:text
-				key:termArray[i][1]
-				acronym:(
-					ar = []
-					if text.length > 0
-						for j in [0 ... text.length]
-							charcode = text.charCodeAt j
-							ar.push j if (
-								(isUppercase charcode) or
-								isAlphanum(charcode) and
-								(j == 0 or !isAlphanum(text.charCodeAt(j - 1))) #not letter
-							)
-					ar
-				)
+		@set = (
+			if termArray.length > 0
+				if termArray[0].constructor == String
+					termArray.map (st, i)-> [st, i]
+				else
+					termArray
+			else []
+		).map ([text, key])->
+			text:text
+			key:key
+			acronym:(
+				ar = []
+				if text.length > 0
+					for j in [0 ... text.length]
+						charcode = text.charCodeAt j
+						ar.push j if (
+							(isUppercase charcode) or
+							isAlphanum(charcode) and
+							(j == 0 or !isAlphanum(text.charCodeAt(j - 1))) #not letter
+						)
+				ar
+			)
 		#@set is like [{acronym, text, key}*] where acronym is an array of the indeces of the beginnings of the words in the text
-	seek: (searchTerm, nresults = 10)-> #returns like [{score, matched:[the text with match spans inserted where a letter matched], text, key}*]
+	seek: (searchTerm, nresults = 10)-> #returns like [{score, matched:<the text with match spans inserted where a letter matched>, text, key}*]
 		#we sort of assume nresults is going to be small enough that an array is the most performant data structure for collating search results.
 		return [] if @set.length == 0 or nresults == 0
 		if searchTerm.length == 0
@@ -164,8 +171,7 @@ class @MatchSet
 				return []
 		retar = []
 		minscore = 0
-		for ci in [0 ... @set.length]
-			c = @set[ci]
+		for c in @set
 			sr = matching c, searchTerm, @hitTag
 			if sr and (sr.score > minscore or retar.length < nresults)
 				insertat = 0
@@ -178,7 +184,12 @@ class @MatchSet
 					retar.pop()
 				minscore = retar[retar.length-1].score
 		retar
-	
+	remove: (item)-> #O(@set.length)
+		id = @set.indexOf item
+		if id >= 0
+			@set.splice id, 1
+	add: (item)->
+		
 	seekBestKey: (term)->
 		res = @seek(term, 1)
 		if res.length > 0

@@ -42,7 +42,7 @@ ms.seek('hs', 1);
 returns
 ```
 [ { score: 15,
-    matched: '<span class="hot-pink">H</span>olly <span class="hot-pink">S</span>word',
+    matched: '<span class="hot-pink">H</span>oly <span class="hot-pink">S</span>word',
     key: 3,
     text: 'Holy Sword' } ]
 ```
